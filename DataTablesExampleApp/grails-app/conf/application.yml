@@ -75,5 +75,7 @@ dataSources:
     pooled: true
     jmxExport: true
 logging:
-  root: ERROR
-  org.tupperware: DEBUG
+  level:
+    org.tupperware: DEBUG
+    root: info
+    org.hibernate.orm.deprecation: ERROR
