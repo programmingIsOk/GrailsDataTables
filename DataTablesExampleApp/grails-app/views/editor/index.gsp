@@ -40,7 +40,7 @@
                 <div class="col p-1 m-1" style="overflow-x: auto">
                     <div><h2>DataTableAjaxEditable - Using Gorm Domain Classes, all Grails</h2></div>
                     <div>
-                        <GDTables:dataTableAjaxEditable data="${PhoneBook}" id="phonebook-info" wantedExports="${['csv'] as List<String>}"/>
+                        <GDTables:dataTableAjaxEditable data="${PhoneBook}" id="phonebook-info" wantedExports="${['csv'] as List<String>}" scrollX="400px"/>
                     </div>
                 </div>
         </div>
