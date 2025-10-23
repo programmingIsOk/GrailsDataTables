@@ -12,15 +12,15 @@ class DataTablesGrailsWebAppPluginGrailsPlugin extends Plugin {
        ]
 
        // TODO Fill in these fields
-       def title = "Data Tables Grails Web App Plugin" // Headline display name of the plugin
-       def author = "Your name"
-       def authorEmail = ""
+       def title = "GrailsDataTables" // Headline display name of the plugin
+       def author = "Tupper-Jacob"
+       def authorEmail = "tupperdjacob@gmail.com"
        def description = '''\
-   Brief summary/description of the plugin.
+   Provides DataTables to Grails
    '''
        def profiles = ['web']
    // URL to the plugin's documentation
-       def documentation = "https://grails.github.io/DataTablesGrailsWebAppPlugin/"
+       def documentation = ""
 
        // Extra (optional) plugin metadata
 
