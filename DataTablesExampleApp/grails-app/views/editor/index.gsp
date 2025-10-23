@@ -15,7 +15,7 @@
 </head>
 
 <body>
-<div style=" margin: 2%; padding: 2%">
+<div class="m-4 p-4">
     <div class="container">
         <g:if test="${flash?.message}">
             <div class="row">
@@ -29,25 +29,27 @@
             </div>
         </g:if>
         <div class="row" style="background-color: grey;">
-            <div class="col">
+            <div class="col-sm-12">
                 <div style="padding: 8px">
-                    <h1>DataTable Editor Example</h1>
-                    <g:link style="color: black" controller="index">GoTo Index Controller</g:link>
+                    <h1 style="font-weight: bolder; text-decoration: underline">DataTable Editor Example</h1>
                 </div>
             </div>
         </div>
         <div class="row" style="background-color: grey;">
-                <div class="col p-1 m-1" style="overflow-x: auto">
-                    <div><h2>DataTableAjaxEditable - Using Gorm Domain Classes, all Grails</h2></div>
-                    <div>
+                <div class="col">
+                    <div><h2 style="font-weight: bold">DataTableAjaxEditable - Using Gorm Domain Classes, all Grails</h2></div>
+                    <div style="background-color: #ababab; padding: 10px;">
                         <GDTables:dataTableAjaxEditable data="${PhoneBook}" id="phonebook-info" wantedExports="${['csv'] as List<String>}" scrollX="400px"/>
                     </div>
                 </div>
         </div>
         <div class="row" style="background-color: grey">
-            <div class="col-sm-12">
-                <h2>AjaxTable</h2>
-                <GDTables:dataTableAjax data="${PhoneBookAjaxOnly}" id="phonebook-info"/>
+            <div class="col">
+                <h2 style="font-weight: bold">AjaxTable</h2>
+                <div style="background-color: #ababab; padding: 10px;">
+                    <GDTables:dataTableAjax data="${PhoneBookAjaxOnly}" id="phonebook-info"/>
+                </div>
+                <br>
             </div>
         </div>
     </div>
