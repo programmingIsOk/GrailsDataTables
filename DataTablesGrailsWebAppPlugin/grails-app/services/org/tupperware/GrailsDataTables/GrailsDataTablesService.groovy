@@ -723,8 +723,12 @@ class GrailsDataTablesService {
 
     }
 
+    private static boolean loggedBase64ImpWarning = false
     boolean getIsBase64ParamMapConversionEnabled() {
-        log.warn("getIsBase64ParamMapConversionEnabled - Base64 conversion for requests not implemented. Defaulting to 'false'")
+        if (!loggedBase64ImpWarning) {
+            log.warn("getIsBase64ParamMapConversionEnabled - Base64 conversion for requests not implemented. Defaulting to 'false'. This message will not be shown again.")
+            loggedBase64ImpWarning = true
+        }
         return false
     }
 

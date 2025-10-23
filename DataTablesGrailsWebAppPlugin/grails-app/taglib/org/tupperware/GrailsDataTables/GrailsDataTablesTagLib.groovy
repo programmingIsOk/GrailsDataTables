@@ -248,6 +248,8 @@ class GrailsDataTablesTagLib {
         }
     }
 
+    private static final ArrayList<String> loggedParamnames = new ArrayList<>()
+
     def DataTableAjax = { attrs, body ->
 
         /*
@@ -376,8 +378,14 @@ class GrailsDataTablesTagLib {
                     else if (Objects.equals(itsAjaxColumnName, field.name)) {
                         throw new GrailsTagException("The field ${field.name} of class ${theTableClazz?.toString()} has its ajaxColumnName set to its field name")
                     } else {
-                        log.debug("Adding ajax parameter name ${itsAjaxColumnName} for the field ${field.name}")
-                        ajaxColumnNames.add(itsAjaxColumnName)
+
+
+                        String outputAjaxParameterNameLog = "Adding ajax parameter name ${itsAjaxColumnName} for the field ${field.name}. This will not be logged again."
+                        if (!loggedParamnames.contains(outputAjaxParameterNameLog as String)) {
+                            log.debug(outputAjaxParameterNameLog)
+                            loggedParamnames.add(outputAjaxParameterNameLog)
+                        }
+                            ajaxColumnNames.add(itsAjaxColumnName)
                     }
 
 
@@ -647,7 +655,11 @@ class GrailsDataTablesTagLib {
                     else if (Objects.equals(itsAjaxColumnName, field.name)) {
                         throw new GrailsTagException("The field ${field.name} of class ${theTableClazz?.toString()} has its ajaxColumnName set to its field name")
                     } else {
-                        log.debug("Adding ajax parameter name ${itsAjaxColumnName} for the field ${field.name}")
+                        String outputAjaxParameterNameLog = "Adding ajax parameter name ${itsAjaxColumnName} for the field ${field.name}. This will not be logged again."
+                        if (!loggedParamnames.contains(outputAjaxParameterNameLog as String)) {
+                            log.debug(outputAjaxParameterNameLog)
+                            loggedParamnames.add(outputAjaxParameterNameLog)
+                        }
                         ajaxColumnNames.add(itsAjaxColumnName)
                     }
 
