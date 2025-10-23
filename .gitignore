@@ -1,0 +1,5 @@
+/.idea/
+/DataTablesGrailsWebAppPlugin/buildSrc
+/DataTablesExampleApp/buildSrc
+/DataTablesGrailsWebAppPlugin/gradle
+/DataTablesExampleApp/gradle
