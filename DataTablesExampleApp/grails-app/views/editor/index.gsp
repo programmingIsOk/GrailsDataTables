@@ -5,7 +5,7 @@
   Time: 9:13 PM
 --%>
 
-<%@ page import="DataTablesExampleApp.PhoneBookAjaxOnly; DataTablesExampleApp.PhoneBook" contentType="text/html;charset=UTF-8" %>
+<%@ page import="DataTablesExampleApp.PhoneBookStuff.PhoneBookAjaxOnly; DataTablesExampleApp.PhoneBookStuff.PhoneBook" contentType="text/html;charset=UTF-8" %>
 <html>
 <head>
     <title>Editor</title>
@@ -47,7 +47,7 @@
             <div class="col">
                 <h2 style="font-weight: bold">AjaxTable</h2>
                 <div style="background-color: #ababab; padding: 10px;">
-                    <GDTables:dataTableAjax data="${PhoneBookAjaxOnly}" id="phonebook-info"/>
+                    <GDTables:dataTableAjax data="${DataTablesExampleApp.PhoneBookStuff.PhoneBookAjaxOnly}" id="phonebook-info"/>
                 </div>
                 <br>
             </div>

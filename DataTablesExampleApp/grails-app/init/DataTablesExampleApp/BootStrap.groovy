@@ -1,6 +1,6 @@
 package DataTablesExampleApp
 
-
+import DataTablesExampleApp.PhoneBookStuff.PhoneBook
 import org.apache.commons.lang.RandomStringUtils
 
 class BootStrap {

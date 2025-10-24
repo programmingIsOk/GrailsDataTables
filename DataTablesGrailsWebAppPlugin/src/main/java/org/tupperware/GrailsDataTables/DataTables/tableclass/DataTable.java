@@ -19,4 +19,10 @@ public @interface DataTable {
 
     int[] lengthMenu() default {5, 10, 25, 50};
 
+    /**
+     * This is to be used to make sure that the controller is responding to the correct gorm class
+     * @return Defaults to 0. An exception will be thrown if this is not changed.
+     */
+    long version() default 0;
+
 }

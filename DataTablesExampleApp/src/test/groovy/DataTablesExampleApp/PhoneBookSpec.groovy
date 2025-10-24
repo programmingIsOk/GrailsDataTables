@@ -1,5 +1,6 @@
 package DataTablesExampleApp
 
+import DataTablesExampleApp.PhoneBookStuff.PhoneBook
 import grails.testing.gorm.DomainUnitTest
 import spock.lang.Specification
 
