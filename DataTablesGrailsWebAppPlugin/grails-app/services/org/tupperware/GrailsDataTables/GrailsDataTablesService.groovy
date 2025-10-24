@@ -1432,11 +1432,16 @@ class GrailsDataTablesService {
     HashMap<String, Object> serviceDataTableAjaxCall(Object forClass, GrailsParameterMap gParams, SessionFactory sessionFactory) {
 
         try {
-
             try {
                 return _serviceDataTableAjaxCall(forClass, gParams, sessionFactory)
             } catch (Exception e) {
-                return sendErrorOrGeneric("Exception during service call: ${e?.getMessage()}, cause: ${e?.getCause()}", false)
+                try {
+                    log.error("Exception during service call.", e)
+                } catch (Exception ignore) {
+
+                } finally {
+                    return sendErrorOrGeneric("Exception during service call: ${e?.getMessage()}, cause: ${e?.getCause()}", false)
+                }
             }
 
         } catch (Exception e) {
@@ -1445,7 +1450,6 @@ class GrailsDataTablesService {
             jsonError.put("error", genericErrorMsg)
             return jsonError
         }
-
 
     }
 
