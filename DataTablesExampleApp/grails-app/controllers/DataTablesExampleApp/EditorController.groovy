@@ -1,6 +1,6 @@
 package DataTablesExampleApp
 
-
+import DataTablesExampleApp.PhoneBookStuff.PhoneBook
 import datatables.PhoneBookDisplay
 import grails.converters.JSON
 import org.tupperware.GrailsDataTables.Controllers.DataTableContext
