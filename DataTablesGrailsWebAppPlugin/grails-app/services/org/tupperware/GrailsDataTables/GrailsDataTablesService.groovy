@@ -1283,7 +1283,6 @@ class GrailsDataTablesService {
                 return null
             }
 
-            EntityManager em = sessionFactory.createEntityManager()
             Object attachedToUpdate = resultToUpdate
             //Object attachedToUpdate = rootSession.find(thisClass, resultToUpdate."id")
 
