@@ -38,14 +38,61 @@ import java.util.regex.Pattern
 
 /**
  * The sole service, used for essentially everything.
+ *
+ * @since 0.1
  */
 @CompileDynamic
 class GrailsDataTablesService {
 
     static scope = "singleton"
+
     GrailsApplication grailsApplication
     LinkGenerator grailsLinkGenerator
     MessageSource messageSource
+
+    //I want to obscure the info - encryption not for security
+    private static String encrypt(String plainText, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] encryptedBytes = cipher.doFinal(plainText.getBytes());
+        return Base64.getEncoder().encodeToString(encryptedBytes);
+    }
+
+    private String decrypt(String encryptedText, SecretKey key) throws Exception {
+        try {
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, key);
+            byte[] decodedBytes = Base64.getDecoder().decode(encryptedText);
+            byte[] decryptedBytes = cipher.doFinal(decodedBytes);
+            return new String(decryptedBytes);
+        } catch (Exception e) {
+            log.error("Failed to decrypt param string", e)
+            return null
+        }
+    }
+
+    private static SecretKey tempParamKey = null
+    private String encryptOrDecrypt(String string, Boolean encryptDecrypt) {
+        if (tempParamKey == null) {
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+            keyGen.init(128);
+            tempParamKey = keyGen.generateKey()
+        }
+        if (encryptDecrypt) {
+            String encrypted = encrypt(string, tempParamKey);
+            return encrypted
+        } else {
+            String decrypted = decrypt(string, tempParamKey);
+            return decrypted
+        }
+    }
+    String encryptParamString(String string) {
+        return encryptOrDecrypt(string, true)
+    }
+    String decryptParamString(String string) {
+        return encryptOrDecrypt(string, false)
+    }
+
 
     private static final ArrayList<String> loggedDebugMessaged = new ArrayList<>()
     static Boolean hasDebugMessageBeenLogged(String message) {
@@ -694,10 +741,21 @@ class GrailsDataTablesService {
 
     }
 
-    String gspRBase64Uri(def o) {
+    String gspRBase64Uri(String o, Boolean overrideConfig) {
+        try {
+            if (isBase64ParamMapConversionEnabled || overrideConfig) {
+                return new String(Base64.decoder.decode(o.bytes))
+            }
+            else return o?.toString()
+        } catch (Exception e) {
+            logger.error(e)
+            return null
+        }
+    }
+    String gspRBase64Uri(String o) {
         try {
             if (isBase64ParamMapConversionEnabled)
-                return (o?.toString()?.decodeAsBase64())
+                return new String(Base64.decoder.decode(o.bytes))
             else return o?.toString()
         } catch (Exception e) {
             logger.error(e)
@@ -705,10 +763,21 @@ class GrailsDataTablesService {
         }
     }
 
+    String gspBase64Uri(String o, Boolean overrideConfig) {
+        try {
+            if (isBase64ParamMapConversionEnabled || overrideConfig)
+                return new String(Base64.encoder.encode(o.bytes))
+            else return o
+        } catch (Exception e) {
+            logger.error(e)
+            return null
+        }
+
+    }
     String gspBase64Uri(String o) {
         try {
             if (isBase64ParamMapConversionEnabled )
-                return (o?.encodeAsBase64())
+                return new String(Base64.encoder.encode(o.bytes))
             else return o
         } catch (Exception e) {
             logger.error(e)
@@ -720,7 +789,7 @@ class GrailsDataTablesService {
     String gspBase64(def o) {
         try {
             if (isBase64ParamMapConversionEnabled)
-                return (o?.encodeAsBase64())
+                return new String(Base64.encoder.encode(o.bytes))
             else return o
         } catch (Exception e) {
             logger.error(e)
@@ -732,7 +801,7 @@ class GrailsDataTablesService {
     String gspRBase64(def o) {
         try {
             if (isBase64ParamMapConversionEnabled)
-                return (o?.decodeBase64())
+                return new String(Base64.encoder.encode(o.bytes))
             else return o
         } catch (Exception e) {
             logger.error(e)
@@ -1412,32 +1481,46 @@ class GrailsDataTablesService {
 
     }
 
+    @Transactional
     HashMap<String, Object> serviceDataTableAjaxCall(GrailsParameterMap params) {
 
-        String resourcesIds = params.getOrDefault("id", null)
+        String resourcesIds = params.getOrDefault("id", null) as String
+        resourcesIds = gspRBase64Uri(resourcesIds, true)
 
+        Integer indexOfResourceNameStart = resourcesIds.indexOf("resourceName=") + 13
+        Integer indexOfResourceNameEnd =  resourcesIds.indexOf(", resourceVersion=")
         String resourceName = resourcesIds.substring(
-                resourcesIds.indexOf("resourceName=") + 13, resourcesIds.indexOf(", resourceVersion=")
+                indexOfResourceNameStart, indexOfResourceNameEnd
         )
-        resourceName = new String (resourceName?.decodeBase64())
+        resourceName = decryptParamString(resourceName)
+        if (resourceName == null)
+            return sendErrorOrGeneric("Failed to decrypt resourceName for request", false)
+        resourceName = gspRBase64Uri(resourceName)
 
+        Integer indexOfResourceVersionStart = resourcesIds.indexOf(", resourceVersion=") + 18
+        Integer indexOfResourceVersionEnd = resourcesIds.length() - 1
         String resourceVersion = resourcesIds.substring(
-                (resourcesIds.indexOf(", resourceVersion=") + 18), (resourcesIds.length() - 1)
+                indexOfResourceVersionStart, indexOfResourceVersionEnd
         )
+        resourceVersion = decryptParamString(resourceVersion)
+        if (resourceVersion == null)
+            return sendErrorOrGeneric("Failed to decrypt resourceVersion for request", false)
+        resourceVersion = gspRBase64Uri(resourceVersion)
 
         Class<?> tableClass = Class.forName(resourceName)
         DataTable tableInfo = tableClass.getAnnotation(DataTable.class) as DataTable
         if (tableInfo == null)
             throw new RuntimeException("The class specified by the request is not annotated with DataTables")
 
-        def emptyInstance = tableClass.newInstance([])
-        String hashCode = Integer.toString(emptyInstance.hashCode())
+        if (tableInfo.version() == 0L) {
+            throw new RuntimeException("The resource '${resourceName}' has a default version of '0'")
+        }
 
-        if (!Objects.equals(Integer.parseInt(hashCode), Integer.parseInt(resourceVersion)))
+        if (!Objects.equals(Long.parseLong(resourceVersion), tableInfo.version()))
             throw new RuntimeException("The requested resource on the HttpRequest did not match the requested version of the resource")
         else {
 
-            List<String> mappedResources = GrailsDomainBinder.getMapping(tableClass).getDatasources()
+            List<String> mappedResources = GrailsDomainBinder.getMapping(tableClass)?.getDatasources()
 
             if (mappedResources?.size >=  1) {
                 String mappedResource = mappedResources.get(0)
