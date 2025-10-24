@@ -250,6 +250,15 @@ class GrailsDataTablesTagLib {
 
     private static final ArrayList<String> loggedParamnames = new ArrayList<>()
 
+    private String getAjaxEndpointUri(Class thisClass, DataTable tableInfo) {
+        String __resourceName = grailsDataTablesService.encryptParamString(thisClass.getName()?.toString())
+        String __resourceVersion = grailsDataTablesService.encryptParamString(tableInfo.version()?.toString())
+        __resourceName = grailsDataTablesService.gspBase64Uri(__resourceName)
+        __resourceVersion = grailsDataTablesService.gspBase64Uri(__resourceVersion)
+        String __id = grailsDataTablesService.gspBase64Uri("{resourceName=${__resourceName}, resourceVersion=${__resourceVersion}}", true)
+        return (createLink(controller: "grailsDataTables", params: [id : __id])) as String
+    }
+
     def DataTableAjax = { attrs, body ->
 
         /*
@@ -302,7 +311,7 @@ class GrailsDataTablesTagLib {
         if (tableInfo.type() != DataTableType.AJAX_TABLE)
             throw new GrailsTagException("$datatableAjaxName passed data class not of AJAX_TABLE")
 
-        def url = createLink(controller: "grailsDataTables", params: [id : [resourceName: thisClass.getName().encodeAsBase64(), resourceVersion: grailsDataTablesService.gspBase64Uri(thisClass.newInstance([]).hashCode()?.toString())]])
+        def url = getAjaxEndpointUri(thisClass, tableInfo)
 
         lengthMenu = tableInfo.lengthMenu()
 
@@ -566,7 +575,7 @@ class GrailsDataTablesTagLib {
         if (tableInfo.type() != DataTableType.AJAX_TABLE_EDITABLE)
             throw new GrailsTagException("$datatableAjaxEditableName passed data class not of AJAX_TABLE_EDITABLE")
 
-        def url = createLink(controller: "grailsDataTables", params: [id: [resourceName: thisClass.getName().encodeAsBase64(), resourceVersion: grailsDataTablesService.gspBase64Uri(thisClass.newInstance([]).hashCode()?.toString())]])
+        def url = getAjaxEndpointUri(thisClass, tableInfo)
 
         lengthMenu = tableInfo.lengthMenu()
 
