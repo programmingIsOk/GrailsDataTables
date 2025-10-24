@@ -381,10 +381,8 @@ class GrailsDataTablesTagLib {
 
 
                         String outputAjaxParameterNameLog = "Adding ajax parameter name ${itsAjaxColumnName} for the field ${field.name}. This will not be logged again."
-                        if (!loggedParamnames.contains(outputAjaxParameterNameLog as String)) {
+                        if (!grailsDataTablesService.hasDebugMessageBeenLogged(outputAjaxParameterNameLog))
                             log.debug(outputAjaxParameterNameLog)
-                            loggedParamnames.add(outputAjaxParameterNameLog)
-                        }
                             ajaxColumnNames.add(itsAjaxColumnName)
                     }
 
@@ -656,10 +654,8 @@ class GrailsDataTablesTagLib {
                         throw new GrailsTagException("The field ${field.name} of class ${theTableClazz?.toString()} has its ajaxColumnName set to its field name")
                     } else {
                         String outputAjaxParameterNameLog = "Adding ajax parameter name ${itsAjaxColumnName} for the field ${field.name}. This will not be logged again."
-                        if (!loggedParamnames.contains(outputAjaxParameterNameLog as String)) {
+                        if (!grailsDataTablesService.hasDebugMessageBeenLogged(outputAjaxParameterNameLog))
                             log.debug(outputAjaxParameterNameLog)
-                            loggedParamnames.add(outputAjaxParameterNameLog)
-                        }
                         ajaxColumnNames.add(itsAjaxColumnName)
                     }
 

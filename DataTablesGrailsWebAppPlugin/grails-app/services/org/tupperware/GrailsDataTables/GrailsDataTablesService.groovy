@@ -43,6 +43,20 @@ class GrailsDataTablesService {
     LinkGenerator grailsLinkGenerator
     MessageSource messageSource
 
+    private static final ArrayList<String> loggedDebugMessaged = new ArrayList<>()
+    static Boolean hasDebugMessageBeenLogged(String message) {
+        try {
+            if (loggedDebugMessaged.contains(message))
+                return true
+            else {
+                loggedDebugMessaged.add(message)
+                return false
+            }
+        } catch (Exception ignore) {
+            return null
+        }
+    }
+
     private static String genericErrorMsg = "A system error has occurred"
 
     private static Logger logger = LoggerFactory.getLogger(this.class?.simpleName)
@@ -723,12 +737,11 @@ class GrailsDataTablesService {
 
     }
 
-    private static boolean loggedBase64ImpWarning = false
+
     boolean getIsBase64ParamMapConversionEnabled() {
-        if (!loggedBase64ImpWarning) {
-            log.warn("getIsBase64ParamMapConversionEnabled - Base64 conversion for requests not implemented. Defaulting to 'false'. This message will not be shown again.")
-            loggedBase64ImpWarning = true
-        }
+        String warningMessage = "getIsBase64ParamMapConversionEnabled - Base64 conversion for requests not implemented. Defaulting to 'false'. This message will not be shown again."
+        if (!hasDebugMessageBeenLogged(warningMessage))
+            log.warn(warningMessage)
         return false
     }
 
