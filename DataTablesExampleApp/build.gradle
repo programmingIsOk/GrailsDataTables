@@ -92,7 +92,7 @@ tasks.withType(Test) {
 }
 tasks.withType(War).configureEach { War war ->
     war.dependsOn compileGroovyPages
-    war.archiveFileName = "DataTablesExampleApp##0.1.war"
+//    war.archiveFileName = "DataTablesExampleApp##0.1.war"
 }
 webdriverBinaries {
     chromedriver '110.0.5481.77'
@@ -103,3 +103,4 @@ assets {
     minifyJs = true
     minifyCss = true
 }
+bootWar.enabled = true
