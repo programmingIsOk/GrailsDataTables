@@ -74,6 +74,14 @@ dataSources:
     password: ''
     pooled: true
     jmxExport: true
+  Sakila:
+    dbCreate: update
+    url: jdbc:h2:mem:devSakila;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE #jdbc:h2:./testDataBase
+    driverClassName: org.h2.Driver
+    username: sa
+    password: ''
+    pooled: true
+    jmxExport: true
 logging:
   level:
     org.tupperware: DEBUG
