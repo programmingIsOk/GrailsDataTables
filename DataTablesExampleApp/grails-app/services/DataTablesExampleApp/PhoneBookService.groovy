@@ -1,5 +1,6 @@
 package DataTablesExampleApp
 
+import DataTablesExampleApp.PhoneBookStuff.PhoneBook
 import grails.gorm.transactions.Transactional
 import grails.web.servlet.mvc.GrailsParameterMap
 import groovy.transform.CompileStatic
