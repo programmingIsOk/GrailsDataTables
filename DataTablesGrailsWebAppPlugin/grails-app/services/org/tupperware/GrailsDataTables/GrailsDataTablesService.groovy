@@ -1107,113 +1107,89 @@ class GrailsDataTablesService {
 
         if (Objects.nonNull(resultToUpdate)) {
 
-            Session rootSession = sessionFactory.openSession()
-            if (!rootSession.isOpen()) {
-                logger.error("Session not open, unable to persist updated object")
-                return null
-            }
 
-            EntityManager em = sessionFactory.createEntityManager()
-            Object attachedToUpdate = em.find(thisClass, resultToUpdate."id")
-            //Object attachedToUpdate = rootSession.find(thisClass, resultToUpdate."id")
 
-            for (Field field : updatingFields) {
-                DTColumn columnInfo = field.getAnnotation(DTColumn.class)
-                String paramKey = "data[${id}][${columnInfo.ajaxColumnName()}]"
-                Object newValue = gParams.get(paramKey)
-                //Value from the datatables for the new value must be present.
-                assert newValue != null
-                if (((String) newValue)?.length() >= 1) {
-                    try {
-                        if (Objects.equals(newValue, ""))
-                            continue
-                        logger.debug("Editable DataTable Column param.value not null, attempting to parse for the field's datatype : '${field?.getType()?.class?.toString()}'")
-                        switch (field.type) {
-                            case String.class:
-                                attachedToUpdate."$field.name" = (String) newValue
-                                break
-                            case Integer.class:
-                                //Cast to a long first to see if it fails length-wise
-                                Long tempVal = Long.parseLong((String) newValue)
-                                if (tempVal > Integer.MAX_VALUE) {
-                                    return sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too large", true)
-                                } else if (tempVal < Integer.MIN_VALUE) {
-                                    return sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too small", true)
-                                }
-                                attachedToUpdate."$field.name" = Integer.parseInt((String) newValue)
-                                break
-                            case Long.class:
-                                attachedToUpdate."$field.name" = Long.parseLong((String) newValue)
-                                break
-                            case Date.class:
-                                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd")
-                                Date newDateValue = sdf.parse((String) newValue)
-                                attachedToUpdate."$field.name" = newDateValue
-                                break
-                        }
-                    } catch (NumberFormatException e) {
-                        logger.warn(e?.getMessage())
-                        return sendErrorOrGeneric("Validation Errors: ${columnInfo?.name()} rejected the value '${newValue?.toString()}'", true)
-                    } catch (Exception e) {
-                        logger.error("Failed to parse params for this datatype.", e)
-                        return sendErrorOrGeneric("Validation Errors: ${columnInfo?.name()} rejected the value '${newValue?.toString()}'", true)
-                    }
-                } else if (Objects.equals(newValue, ""))
-                    attachedToUpdate."$field.name" = null
-            }
-
-            String error = null
+            Object attachedToUpdate = null
+            def validateException = null
+            def savedResult = null
             try {
-                if (!em.isOpen()) {
-                    logger.error("Entity manager is not open!")
-                    return null
-                }
-                EntityTransaction tx = em.getTransaction()
-                tx.begin()
 
-                try {
-                    attachedToUpdate?."validate"()
-                    def validateException = doValidate(attachedToUpdate)
-                    if (Objects.nonNull(validateException)) {
-                        return validateException
+                Session rootSession = sessionFactory.openSession()
+                if (!rootSession.isOpen()) {
+                    return sendErrorOrGeneric("Session not open, unable to persist updated object", false)
+                }
+
+
+                def theDomainClass = grailsApplication.getDomainClass(thisClass.name)?.clazz
+                theDomainClass."withTransaction" {
+                    attachedToUpdate = theDomainClass."findWhere"([id: resultToUpdate."id"])
+                    for (Field field : updatingFields) {
+                        DTColumn columnInfo = field.getAnnotation(DTColumn.class)
+                        String paramKey = "data[${id}][${columnInfo.ajaxColumnName()}]"
+                        Object newValue = gParams.get(paramKey)
+                        //Value from the datatables for the new value must be present.
+                        assert newValue != null
+                        if (((String) newValue)?.length() >= 1) {
+                            try {
+                                if (Objects.equals(newValue, ""))
+                                    continue
+                                logger.debug("Editable DataTable Column param.value not null, attempting to parse for the field's datatype : '${field?.getType()?.class?.toString()}'")
+                                switch (field.type) {
+                                    case String.class:
+                                        attachedToUpdate."$field.name" = (String) newValue
+                                        break
+                                    case Integer.class:
+                                        //Cast to a long first to see if it fails length-wise
+                                        Long tempVal = Long.parseLong((String) newValue)
+                                        if (tempVal > Integer.MAX_VALUE) {
+                                            return sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too large", true)
+                                        } else if (tempVal < Integer.MIN_VALUE) {
+                                            return sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too small", true)
+                                        }
+                                        attachedToUpdate."$field.name" = Integer.parseInt((String) newValue)
+                                        break
+                                    case Long.class:
+                                        attachedToUpdate."$field.name" = Long.parseLong((String) newValue)
+                                        break
+                                    case Date.class:
+                                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd")
+                                        Date newDateValue = sdf.parse((String) newValue)
+                                        attachedToUpdate."$field.name" = newDateValue
+                                        break
+                                }
+                            } catch (NumberFormatException e) {
+                                logger.warn(e?.getMessage())
+                                return sendErrorOrGeneric("Validation Errors: ${columnInfo?.name()} rejected the value '${newValue?.toString()}'", true)
+                            } catch (Exception e) {
+                                logger.error("Failed to parse params for this datatype.", e)
+                                return sendErrorOrGeneric("Validation Errors: ${columnInfo?.name()} rejected the value '${newValue?.toString()}'", true)
+                            }
+                        } else if (Objects.equals(newValue, ""))
+                            attachedToUpdate."$field.name" = null
                     }
-                } catch (Exception e) {
-                    logger.error("Exception calling validate on domain")
-                    return sendErrorOrGeneric("Exception during validation call: ${e?.getMessage()}", true)
+
+                    attachedToUpdate?."validate"()
+                    validateException = doValidate(attachedToUpdate)
+
+                    if (Objects.isNull(validateException)) {
+                        savedResult = attachedToUpdate?."save"()
+                        log.debug("serviceEditAction has called ${thisClass.simpleName} save method")
+                    }
+
                 }
 
-                em.persist(attachedToUpdate)
-                tx.commit()
-                em.close()
-
-                logger.debug("Service has reached committing an transaction for updating the entity (${thisClass?.simpleName}) without exception")
-
-            } catch (PersistenceException e) {
-                logger.error("An exception has occurred updating entity (${thisClass?.simpleName})", e)
-                em.getTransaction().rollback()
-                if (Environment.current == Environment.DEVELOPMENT) {
-                    error = "An error has occurred \n\tPersistence Exception: ${e?.getMessage()}\n\tCause: ${e?.cause?.cause}"
-                } else {
-                    error = "An error has occurred"
-                }
             } catch (Exception e) {
-                HashMap<String, Object> jsonError = new HashMap<>()
-                error = "An error has occurred"
-                if (Environment.current == Environment.DEVELOPMENT)
-                    error += "\n\tException during Transaction: " + e?.getMessage()
-                jsonError.put("error", error)
-            }
-            if (Objects.nonNull(error)) {
-                HashMap<String, Object> jsonError = new HashMap<>()
-                jsonError.put("error", error)
-                return jsonError
+                logger.error("Exception calling validate on domain", e)
+                return sendErrorOrGeneric("Exception during validation call: ${e?.getMessage()}", true)
             }
 
-            def validateException = doValidate(attachedToUpdate)
-            if (Objects.nonNull(validateException))
+            if (Objects.nonNull(validateException)) {
                 return validateException
-
-            return doReturnOfAttached(attachedToUpdate)
+            } else {
+                if (savedResult)
+                    return doReturnOfAttached(attachedToUpdate)
+                else return sendErrorOrGeneric("Not Saved", true)
+            }
 
         } else {
             logger.error("Found no entity based on DT_RowId")
@@ -1347,42 +1323,35 @@ class GrailsDataTablesService {
 
             }
 
+            def savedResult = null
             String error
+            def validateException = null
             try {
-                if (!em.isOpen()) {
-                    return sendErrorOrGeneric("Entity manager did not open", false)
-                }
-                EntityTransaction tx = em.getTransaction()
-                tx.begin()
-                try {
-                    attachedToUpdate?."validate"()
-                    def validateException = doValidate(attachedToUpdate)
-                    if (Objects.nonNull(validateException)) {
-                        return validateException
+                def theDomainClass = grailsApplication.getDomainClass(thisClass.name)?.clazz
+                theDomainClass."withTransaction" {
+                    attachedToUpdate = theDomainClass.newInstance(attachedToUpdate.properties)
+                    attachedToUpdate."validate"()
+
+                     validateException = doValidate(attachedToUpdate)
+
+                    if (Objects.isNull(validateException)) {
+                        savedResult = attachedToUpdate."save"()
                     }
-                } catch (Exception e) {
-                    logger.error("Exception calling validate on domain")
-                    return sendErrorOrGeneric("Exception during validation call: ${e?.getMessage()}", false)
+
                 }
-                em.persist(attachedToUpdate)
-                tx.commit()
-                attachedToUpdate = em.find(thisClass, attachedToUpdate."id") //Yup, official. Must be gorm so the Id is returned. I'm not dealing with a hibernate implementation...
-                em.close()
-            } catch (PersistenceException e) {
-                em.getTransaction().rollback()
-                String fullError = "An error has occurred \n\tException: ${e?.getMessage()}\n\tCause: ${e?.cause?.cause}"
-                sendErrorOrGeneric(fullError, false)
+
             } catch (Exception e) {
                 logger.error("Exception occurred rolling back transaction for create action")
                 return sendErrorOrGeneric("Exception occurred: ${e?.getMessage()}", false)
             }
 
-            def validateException = doValidate(attachedToUpdate)
             if (Objects.nonNull(validateException))
                 return validateException
-            else
-                return doReturnOfAttached(attachedToUpdate)
-
+            else {
+                if (savedResult)
+                    return doReturnOfAttached(attachedToUpdate)
+                else return sendErrorOrGeneric("Did Saved", true)
+            }
         } else {
             return sendErrorOrGeneric("Found no entity based on DT_RowID", false)
         }
