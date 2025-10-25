@@ -16,7 +16,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
 import org.springframework.context.i18n.LocaleContextHolder
-import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy
 import org.springframework.validation.FieldError
 import org.tupperware.GrailsDataTables.DataTables.tableclass.DTColumn
 import org.tupperware.GrailsDataTables.DataTables.tableclass.DTRowId
@@ -26,9 +25,6 @@ import org.tupperware.GrailsDataTables.DataTables.tableclass.DataTableType
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
-import javax.persistence.EntityManager
-import javax.persistence.EntityTransaction
-import javax.persistence.PersistenceException
 import java.lang.annotation.Annotation
 import java.lang.annotation.AnnotationFormatError
 import java.lang.reflect.Field
@@ -1124,6 +1120,10 @@ class GrailsDataTablesService {
                 theDomainClass."withTransaction" {
                     attachedToUpdate = theDomainClass."findWhere"([id: resultToUpdate."id"])
                     for (Field field : updatingFields) {
+
+                        if (validateException != null)
+                            break
+
                         DTColumn columnInfo = field.getAnnotation(DTColumn.class)
                         String paramKey = "data[${id}][${columnInfo.ajaxColumnName()}]"
                         Object newValue = gParams.get(paramKey)
@@ -1142,9 +1142,11 @@ class GrailsDataTablesService {
                                         //Cast to a long first to see if it fails length-wise
                                         Long tempVal = Long.parseLong((String) newValue)
                                         if (tempVal > Integer.MAX_VALUE) {
-                                            return sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too large", true)
+                                            validateException = sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too large", true)
+                                            break
                                         } else if (tempVal < Integer.MIN_VALUE) {
-                                            return sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too small", true)
+                                            validateException = sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too small", true)
+                                            break
                                         }
                                         attachedToUpdate."$field.name" = Integer.parseInt((String) newValue)
                                         break
@@ -1153,27 +1155,37 @@ class GrailsDataTablesService {
                                         break
                                     case Date.class:
                                         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd")
-                                        Date newDateValue = sdf.parse((String) newValue)
+                                        Date newDateValue = null
+                                        try {
+                                            newDateValue = sdf.parse((String) newValue)
+                                        } catch (Exception ignore) {
+                                            validateException = sendErrorOrGeneric("Validation Errors: Field '${columnInfo.name()}' input is not in a recognized date format", true)
+                                        }
+                                        if (validateException != null)
+                                            break
+
                                         attachedToUpdate."$field.name" = newDateValue
                                         break
                                 }
                             } catch (NumberFormatException e) {
                                 logger.warn(e?.getMessage())
-                                return sendErrorOrGeneric("Validation Errors: ${columnInfo?.name()} rejected the value '${newValue?.toString()}'", true)
                             } catch (Exception e) {
                                 logger.error("Failed to parse params for this datatype.", e)
-                                return sendErrorOrGeneric("Validation Errors: ${columnInfo?.name()} rejected the value '${newValue?.toString()}'", true)
                             }
                         } else if (Objects.equals(newValue, ""))
                             attachedToUpdate."$field.name" = null
                     }
 
-                    attachedToUpdate?."validate"()
-                    validateException = doValidate(attachedToUpdate)
 
-                    if (Objects.isNull(validateException)) {
-                        savedResult = attachedToUpdate?."save"()
-                        log.debug("serviceEditAction has called ${thisClass.simpleName} save method")
+                    if (validateException == null) {
+                        attachedToUpdate?."validate"()
+                        validateException = doValidate(attachedToUpdate)
+
+                        if (Objects.isNull(validateException)) {
+                            savedResult = attachedToUpdate?."save"()
+                            log.debug("serviceEditAction has called ${thisClass.simpleName} save method")
+                        }
+
                     }
 
                 }
@@ -1286,7 +1298,15 @@ class GrailsDataTablesService {
             Object attachedToUpdate = resultToUpdate
             //Object attachedToUpdate = rootSession.find(thisClass, resultToUpdate."id")
 
+            def savedResult = null
+            String error
+            def validateException = null
+
             for (Field field : updatingFields) {
+
+                if (validateException != null)
+                    break
+
                 DTColumn columnInfo = field.getAnnotation(DTColumn.class)
                 String paramKey = "data[${id}][${columnInfo.ajaxColumnName()}]"
                 Object newValue = gParams.get(paramKey)
@@ -1301,9 +1321,11 @@ class GrailsDataTablesService {
                             case Integer.class:
                                 Long tempVal = Long.parseLong((String) newValue)
                                 if (tempVal > Integer.MAX_VALUE) {
-                                    return sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too large", true)
+                                    validateException = sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too large", true)
+                                    break
                                 } else if (tempVal < Integer.MIN_VALUE) {
-                                    return sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too small", true)
+                                    validateException = sendErrorOrGeneric("Validation Errors: ${columnInfo.name()} has a number that's too small", true)
+                                    break
                                 }
                                 attachedToUpdate."$field.name" = Integer.parseInt((String) newValue)
                                 break
@@ -1312,7 +1334,14 @@ class GrailsDataTablesService {
                                 break
                             case Date.class:                                        //TODO add custom date formats provided through application.yml - if not preset, have it be the defaults datatables does 'yyyy-MM-dd'
                                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd")
-                                Date newValueDate = sdf.parse((String) newValue)
+                                Date newValueDate = null
+                                try {
+                                    newValueDate = sdf.parse((String) newValue)
+                                } catch (Exception ignore) {
+                                    validateException = sendErrorOrGeneric("Validation Errors: Field '${columnInfo.name()}' input is not in a recognized date format", true)
+                                }
+                                if (validateException != null)
+                                    break
                                 attachedToUpdate."$field.name" = newValueDate
                                 break
                         }
@@ -1322,9 +1351,10 @@ class GrailsDataTablesService {
 
             }
 
-            def savedResult = null
-            String error
-            def validateException = null
+            if (validateException != null)
+                return validateException
+
+
             try {
                 def theDomainClass = grailsApplication.getDomainClass(thisClass.name)?.clazz
                 theDomainClass."withTransaction" {
