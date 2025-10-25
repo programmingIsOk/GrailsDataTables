@@ -18,17 +18,17 @@ class PhoneBook implements Serializable {
     Long lineNumber
 
     @DTColumnRender(renderAs = DTRenderTypes.FORM_ACTION, submitButtonCssClass = "btn btn-success", formMethod="GET", controllerName="editor", actionName = "show", colorStyle = "yellow", submitButtonText = "Show the Thingy")
-    @DTColumn(name = "Action", type = DTColumnDataType.INTEGER, sortable = false, order = 1, ajaxColumnName = "persons_phone_number")
-    private Integer personsNumber2
-    public Integer getPersonsNumber2() {
+    @DTColumn(name = "Action", type = DTColumnDataType.LONG, sortable = false, order = 1, ajaxColumnName = "persons_phone_number")
+    private Long personsNumber2
+    public Long getPersonsNumber2() {
         return this.phoneNumber
     }
 
     @DTColumn(name = "Persons Name", editable = true, type = DTColumnDataType.STRING, order = 2, sortable = true, ajaxColumnName = "persons_name")
     String personsName
 
-    @DTColumn(name = "Phone Number", editable = true, type = DTColumnDataType.INTEGER, order = 3, sortable = true, ajaxColumnName = "persons_phone_number2")
-    Integer phoneNumber
+    @DTColumn(name = "Phone Number", editable = true, type = DTColumnDataType.LONG, order = 3, sortable = true, ajaxColumnName = "persons_phone_number2")
+    Long phoneNumber
 
     @DTColumn(name = "Date", editable = true, type = DTColumnDataType.DATE, order = 4, sortable = true, ajaxColumnName = "persons_phone_number_date_field")
     Date phoneNumberDate
@@ -100,7 +100,7 @@ class PhoneBook implements Serializable {
                     }
                 }
         })
-        phoneNumber nullable: false, unique: true, min: 0, max: Integer.MAX_VALUE
+        phoneNumber nullable: false, unique: true, min: 0L, max: 9999999999L, validator: {val -> return val?.toString()?.size() <= 10}
         lineNumber nullable: true
         phoneBookImage nullable: true, maxSize: 25000
         phoneNumberDate nullable: false
@@ -116,7 +116,7 @@ class PhoneBook implements Serializable {
         version column: "`Version`"
 
         personsName column: "`PersonsName`"
-        phoneNumber column: "`PhoneNumber`"
+        phoneNumber column: "`PhoneNumber`", sqlType: 'BIGINT'
         phoneNumberDate column: "`PhoneNumberDate`"
         dateCreated column: "`DateCreated`"
         activityTimeStamp column: "`ActivityTimeStamp`"

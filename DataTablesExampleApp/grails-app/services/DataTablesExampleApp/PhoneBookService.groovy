@@ -19,7 +19,7 @@ class PhoneBookService {
     }
 
     PhoneBook getByPhoneBookNumber(Integer number) {
-        PhoneBook book = PhoneBook.findWhere([phoneNumber: number])
+        PhoneBook book = PhoneBook.findWhere([phoneNumber: (number as Long)])
         return book
     }
 
